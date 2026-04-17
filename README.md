@@ -148,5 +148,3 @@ npm run dev
 
 Academic project — St. Cloud State University, Spring 2026.
 =======
-# HuskyPark
->>>>>>> 55cfdee7025308fe9124100b27f927fa7d947091
