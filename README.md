@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HuskyPark Predictor
 
 **AI-Driven Parking Spot Probability Dashboard for SCSU**
@@ -146,3 +147,6 @@ npm run dev
 ## License
 
 Academic project — St. Cloud State University, Spring 2026.
+=======
+# HuskyPark
+>>>>>>> 55cfdee7025308fe9124100b27f927fa7d947091
