@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # HuskyPark Predictor
 
 **AI-Driven Parking Spot Probability Dashboard for SCSU**
