@@ -6,6 +6,13 @@
 > Chidubem Okoye · Yvonne Onmakpo · Tonika Devi Avanigadda
 > St. Cloud State University · 2026
 
+[![CI](https://github.com/OChidubem/HuskyPark/actions/workflows/ci.yml/badge.svg)](https://github.com/OChidubem/HuskyPark/actions/workflows/ci.yml)
+[![Deploy](https://github.com/OChidubem/HuskyPark/actions/workflows/deploy.yml/badge.svg)](https://github.com/OChidubem/HuskyPark/actions/workflows/deploy.yml)
+
+> **Live app:** https://huskypark.azurecontainerapps.io *(deploy to Azure to activate)*
+> **Demo video:** [Watch on YouTube](https://youtu.be/PLACEHOLDER) *(update link after recording)*
+> **Phase reports:** [`docs/`](docs/)
+
 ---
 
 ## Overview
@@ -63,6 +70,21 @@ HuskyPark/
 
 ---
 
+## Branching Strategy (Git Flow)
+
+```
+main        ← protected; merge via PR only
+develop     ← integration branch
+feature/*   ← new features (branch from develop, PR back to develop)
+bugfix/*    ← bug fixes
+release/*   ← release candidates
+hotfix/*    ← emergency patches direct from main
+```
+
+All PRs require at least one reviewer before merge. Branch protection rules are enabled on `main` and `develop`.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -98,6 +120,41 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## Azure Deployment
+
+The `infra/` folder contains Bicep templates that provision the full stack on Azure:
+
+| Resource | Azure Service |
+|---|---|
+| Backend API | Azure Container Apps |
+| Frontend | Azure Static Web Apps |
+| PostgreSQL | Azure Database for PostgreSQL Flexible Server |
+| MongoDB | Azure Cosmos DB (MongoDB API) |
+| Redis | Azure Cache for Redis |
+| Secrets | Azure Key Vault |
+| Observability | Azure Application Insights |
+
+### Deploy
+
+```bash
+# 1 — Login
+az login
+az account set --subscription <YOUR_SUBSCRIPTION_ID>
+
+# 2 — Create resource group
+az group create --name huskypark-rg --location eastus
+
+# 3 — Deploy IaC
+az deployment group create \
+  --resource-group huskypark-rg \
+  --template-file infra/main.bicep \
+  --parameters @infra/parameters.json
+```
+
+The GitHub Actions workflow (`.github/workflows/deploy.yml`) runs this automatically on every push to `main`.
 
 ---
 
@@ -145,5 +202,6 @@ npm run dev
 
 ## License
 
+MIT — see [LICENSE](LICENSE)
+
 Academic project — St. Cloud State University, Spring 2026.
-=======
