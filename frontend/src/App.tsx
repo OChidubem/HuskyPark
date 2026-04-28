@@ -1,7 +1,9 @@
+
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LotDetail from "./pages/LotDetail";
 import AIRecommend from "./pages/AIRecommend";
@@ -26,13 +28,13 @@ function ProtectedLayout() {
       </aside>
       <div className="flex-1 overflow-y-auto">
         <Routes>
-          <Route path="dashboard"       element={<Dashboard />} />
-          <Route path="lots/:id"        element={<LotDetail />} />
-          <Route path="recommend"       element={<AIRecommend />} />
-          <Route path="permits"         element={<Permits />} />
-          <Route path="admin"           element={<Navigate to="/admin/events" replace />} />
-          <Route path="admin/events"    element={<AdminEvents />} />
-          <Route path="*"               element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="lots/:id" element={<LotDetail />} />
+          <Route path="recommend" element={<AIRecommend />} />
+          <Route path="permits" element={<Permits />} />
+          <Route path="admin" element={<Navigate to="/admin/events" replace />} />
+          <Route path="admin/events" element={<AdminEvents />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>
     </div>
@@ -44,10 +46,13 @@ export default function App() {
     <QueryClientProvider client={qc}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login"  element={<Login />} />
-          <Route path="/*"      element={<ProtectedLayout />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/*" element={<ProtectedLayout />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   );
 }
+
+
