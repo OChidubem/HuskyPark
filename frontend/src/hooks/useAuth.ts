@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { login, logout, register } from "../lib/auth";
 
@@ -27,6 +28,14 @@ export function useAuth() {
     localStorage.removeItem("huskypark_role");
   };
 
+  const signUp = async (full_name: string, email: string, password: string) => {
+    const user = await register({ full_name, email, password });
+    setUserId(user.user_id);
+    setRole(user.role);
+    localStorage.setItem("huskypark_user_id", String(user.user_id));
+    localStorage.setItem("huskypark_role", user.role);
+  };
+
   return {
     userId,
     role,
@@ -34,6 +43,6 @@ export function useAuth() {
     isAdmin: role === "admin",
     signIn,
     signOut,
-    register,
+    signUp,
   };
 }
