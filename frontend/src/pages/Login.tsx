@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
@@ -28,7 +28,6 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
-        {/* Brand */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-[#1a2744]">
             Husky<span className="text-yellow-500">Park</span>
@@ -38,7 +37,7 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-200">
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
           <h2 className="mb-6 text-lg font-semibold text-gray-900">Sign in</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -53,8 +52,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                  focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="you@stcloudstate.edu"
               />
             </div>
@@ -70,22 +68,21 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                  focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600" role="alert">{error}</p>
+              <p className="text-sm text-red-600" role="alert">
+                {error}
+              </p>
             )}
 
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="w-full rounded-xl bg-[#1a2744] py-2.5 text-sm font-semibold text-white
-                hover:bg-[#243561] disabled:opacity-60 transition
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="w-full rounded-xl bg-[#1a2744] py-2.5 text-sm font-semibold text-white transition hover:bg-[#243561] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
@@ -93,7 +90,9 @@ export default function Login() {
 
           <p className="mt-4 text-center text-xs text-gray-500">
             Don't have an account?{" "}
-            <a href="/register" className="text-blue-600 hover:underline">Register</a>
+            <Link to="/register" className="text-blue-600 hover:underline">
+              Register
+            </Link>
           </p>
         </div>
       </div>
