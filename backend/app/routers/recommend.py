@@ -1,6 +1,7 @@
 """AI parking recommendation endpoint using OpenAI."""
 
 from datetime import datetime, timezone
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from openai import AsyncOpenAI
@@ -14,6 +15,7 @@ from app.database.postgres import get_db
 from app.models.schemas import RecommendRequest, RecommendResponse, LotRecommendation
 
 router = APIRouter(prefix="/recommend", tags=["recommend"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("", response_model=RecommendResponse)
@@ -35,6 +37,12 @@ async def get_recommendation(
         ORDER BY pp.lot_id, pp.target_time DESC
         """
     )
+
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Parking availability is still warming up. Try again in a moment.",
+        )
 
     # ── Fetch latest weather ───────────────────────────────────
     weather_row = await conn.fetchrow(
@@ -61,57 +69,69 @@ async def get_recommendation(
         f"Format your response as a numbered list."
     )
 
-    if not settings.openai_api_key:
-        # Fallback: return top lots by prob_score without AI
-        top = sorted(rows, key=lambda r: float(r["prob_score"]), reverse=True)[:3]
-        recommendations = [
-            LotRecommendation(
-                rank=i + 1,
-                lot_id=r["lot_id"],
-                lot_name=r["lot_name"],
-                prob_score=float(r["prob_score"]),
-                rationale=f"{float(r['prob_score']):.0%} availability — highest near your target time.",
-            )
-            for i, r in enumerate(top)
-        ]
-        ai_text = "AI recommendations unavailable (no API key configured). Showing top lots by availability."
-    else:
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
-        start = datetime.now(timezone.utc)
-        completion = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=400,
+    top = sorted(rows, key=lambda r: float(r["prob_score"]), reverse=True)[:3]
+    fallback_recommendations = [
+        LotRecommendation(
+            rank=i + 1,
+            lot_id=r["lot_id"],
+            lot_name=r["lot_name"],
+            prob_score=float(r["prob_score"]),
+            rationale=f"{float(r['prob_score']):.0%} availability — strongest current option near your target time.",
         )
-        latency_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
-        ai_text = completion.choices[0].message.content or ""
+        for i, r in enumerate(top)
+    ]
 
-        top = sorted(rows, key=lambda r: float(r["prob_score"]), reverse=True)[:3]
-        recommendations = [
-            LotRecommendation(
-                rank=i + 1,
-                lot_id=r["lot_id"],
-                lot_name=r["lot_name"],
-                prob_score=float(r["prob_score"]),
-                rationale="See AI response for full rationale.",
+    recommendations = fallback_recommendations
+    ai_text = (
+        "Showing the strongest lots by current availability. "
+        "AI-specific reasoning is unavailable right now."
+    )
+
+    if settings.openai_api_key:
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        try:
+            start = datetime.now(timezone.utc)
+            completion = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=400,
             )
-            for i, r in enumerate(top)
-        ]
+            latency_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
+            ai_text = completion.choices[0].message.content or ai_text
+            recommendations = [
+                LotRecommendation(
+                    rank=i + 1,
+                    lot_id=r["lot_id"],
+                    lot_name=r["lot_name"],
+                    prob_score=float(r["prob_score"]),
+                    rationale="See AI response for full rationale.",
+                )
+                for i, r in enumerate(top)
+            ]
 
-        # Store session in MongoDB
-        mongo_db = get_mongo_db()
-        await mongo_db.ai_recommendation_sessions.insert_one(
-            {
-                "user_id": str(user["user_id"]),
-                "created_at": datetime.now(timezone.utc),
-                "query": body.query,
-                "target_time": target,
-                "weather_condition": weather_str,
-                "recommendations": [r.model_dump() for r in recommendations],
-                "ai_response_text": ai_text,
-                "model_used": "gpt-4o-mini",
-                "latency_ms": latency_ms,
-            }
+            try:
+                mongo_db = get_mongo_db()
+                await mongo_db.ai_recommendation_sessions.insert_one(
+                    {
+                        "user_id": str(user["user_id"]),
+                        "created_at": datetime.now(timezone.utc),
+                        "query": body.query,
+                        "target_time": target,
+                        "weather_condition": weather_str,
+                        "recommendations": [r.model_dump() for r in recommendations],
+                        "ai_response_text": ai_text,
+                        "model_used": "gpt-4o-mini",
+                        "latency_ms": latency_ms,
+                    }
+                )
+            except Exception:
+                logger.exception("Failed to persist AI recommendation session")
+        except Exception:
+            logger.exception("AI recommendation failed; returning availability fallback")
+    else:
+        ai_text = (
+            "AI recommendations unavailable because no OpenAI API key is configured. "
+            "Showing the strongest lots by live availability instead."
         )
 
     context = {

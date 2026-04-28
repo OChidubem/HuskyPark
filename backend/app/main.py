@@ -17,7 +17,7 @@ scheduler = AsyncIOScheduler()
 
 async def _recompute_predictions() -> None:
     """Background job: recompute all lot predictions every 15 minutes."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from app.database.postgres import get_pool
     from app.services.prediction import compute_probability
@@ -27,10 +27,44 @@ async def _recompute_predictions() -> None:
         lot_rows = await conn.fetch(
             "SELECT lot_id FROM parking_lot WHERE is_active = TRUE"
         )
-        target = datetime.now(timezone.utc) + timedelta(hours=1)
+        target = datetime.utcnow() + timedelta(hours=1)
+        weather_row = await conn.fetchrow(
+            """
+            SELECT condition
+            FROM weather_snapshot
+            ORDER BY recorded_at DESC
+            LIMIT 1
+            """
+        )
+        active_event_rows = await conn.fetch(
+            """
+            SELECT title, expected_attendance
+            FROM campus_event
+            WHERE event_start <= $1
+              AND event_end >= $1
+            """,
+            target,
+        )
+        weather_condition = str(weather_row["condition"]) if weather_row else "clear"
+        active_events = []
+        for row in active_event_rows:
+            attendance = int(row["expected_attendance"] or 0)
+            if attendance >= 2000:
+                impact = "high"
+            elif attendance >= 700:
+                impact = "medium"
+            else:
+                impact = "low"
+            active_events.append({"title": row["title"], "impact_level": impact})
 
         for lot in lot_rows:
-            prediction = await compute_probability(conn, lot["lot_id"], target)
+            prediction = await compute_probability(
+                conn,
+                lot["lot_id"],
+                target,
+                weather_condition=weather_condition,
+                active_events=active_events,
+            )
             await conn.execute(
                 """
                 INSERT INTO parking_prediction
@@ -52,6 +86,7 @@ async def _recompute_predictions() -> None:
 async def lifespan(app: FastAPI):
     # Startup
     await get_pool()
+    await _recompute_predictions()
     scheduler.add_job(_recompute_predictions, "interval", minutes=15, id="recompute")
     scheduler.start()
     yield

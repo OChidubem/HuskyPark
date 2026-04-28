@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 import asyncpg
 
 from app.auth.jwt import create_access_token
+from app.config import settings
 from app.database.postgres import get_db
 from app.models.schemas import LoginRequest, TokenResponse, UserCreate, UserOut
 
@@ -55,9 +56,9 @@ async def login(
         key="access_token",
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,  # set True in production (HTTPS)
-        max_age=3600,
+        samesite=settings.auth_cookie_samesite,
+        secure=settings.auth_cookie_secure,
+        max_age=settings.access_token_expire_minutes * 60,
     )
     return TokenResponse(user_id=row["user_id"], role=row["role"])
 

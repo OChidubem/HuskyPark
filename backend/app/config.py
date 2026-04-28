@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # Auth
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 60
+    auth_cookie_secure: bool = False
+    auth_cookie_samesite: str = "lax"
 
     # CORS
     frontend_origin: str = "http://localhost:5173"

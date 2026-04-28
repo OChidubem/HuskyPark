@@ -6,7 +6,7 @@ import asyncpg
 
 from app.auth.deps import require_admin, require_auth
 from app.database.postgres import get_db
-from app.models.schemas import LotOut
+from app.models.schemas import LotCreate, LotOut, LotUpdate
 
 router = APIRouter(prefix="/lots", tags=["lots"])
 
@@ -63,8 +63,8 @@ async def get_lot_predictions(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_lot(
-    body: dict,
-    admin: dict = Depends(require_admin),
+    body: LotCreate,
+    _admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_db),
 ):
     row = await conn.fetchrow(
@@ -73,11 +73,11 @@ async def create_lot(
         VALUES ($1, $2, $3, $4, $5)
         RETURNING lot_id, lot_code, lot_name, lot_type, zone, capacity, is_active
         """,
-        body["lot_code"],
-        body["lot_name"],
-        body["lot_type"],
-        body.get("zone"),
-        body["capacity"],
+        body.lot_code,
+        body.lot_name,
+        body.lot_type,
+        body.zone,
+        body.capacity,
     )
     return dict(row)
 
@@ -85,12 +85,11 @@ async def create_lot(
 @router.patch("/{lot_id}")
 async def update_lot(
     lot_id: int,
-    body: dict,
-    admin: dict = Depends(require_admin),
+    body: LotUpdate,
+    _admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_db),
 ):
-    allowed = {"lot_name", "zone", "capacity", "is_active"}
-    updates = {k: v for k, v in body.items() if k in allowed}
+    updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No valid fields to update")
 
