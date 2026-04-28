@@ -16,6 +16,8 @@ export interface DashboardLot {
   lot_code: string;
   lot_name: string;
   lot_type: string;
+  latitude?: number | null;
+  longitude?: number | null;
   prob_score: number;
   confidence_level: "low" | "medium" | "high";
   color: ProbColor;
@@ -89,6 +91,13 @@ export interface Permit {
   valid_from: string;
   valid_to: string;
   status: "active" | "expired" | "revoked";
+}
+
+export interface PermitCategory {
+  permit_category_id: number;
+  code: string;
+  name: string;
+  description: string | null;
 }
 
 // ── Events ────────────────────────────────────────────────────
