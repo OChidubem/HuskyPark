@@ -1,0 +1,144 @@
+
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+
+export default function Register() {
+  const navigate = useNavigate();
+  const { signUp } = useAuth();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await signUp(fullName, email, password);
+      navigate("/dashboard");
+    } catch {
+      setError("Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-[#1a2744]">
+            Husky<span className="text-yellow-500">Park</span>
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            AI-Driven Parking Predictor · SCSU
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <h2 className="mb-6 text-lg font-semibold text-gray-900">
+            Create an account
+          </h2>
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div>
+              <label htmlFor="fullName" className="mb-1 block text-sm font-medium text-gray-700">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="fullName"
+                type="text"
+                autoComplete="name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Jane Doe"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="you@stcloudstate.edu"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirm" className="mb-1 block text-sm font-medium text-gray-700">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="confirm"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !fullName || !email || !password || !confirm}
+              className="w-full rounded-xl bg-[#1a2744] py-2.5 text-sm font-semibold text-white transition hover:bg-[#243561] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60"
+            >
+              {loading ? "Creating account…" : "Register"}
+            </button>
+          </form>
+
+          <p className="mt-4 text-center text-xs text-gray-500">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
