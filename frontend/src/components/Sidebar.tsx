@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -12,48 +13,53 @@ import { useAuth } from "../hooks/useAuth";
 interface NavItem {
   to: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard",  label: "Dashboard",      icon: <LayoutDashboard className="h-5 w-5" /> },
-  { to: "/recommend",  label: "AI Recommend",   icon: <Sparkles className="h-5 w-5" /> },
-  { to: "/permits",    label: "My Permits",     icon: <CreditCard className="h-5 w-5" /> },
-  { to: "/analytics",  label: "Analytics",      icon: <BarChart2 className="h-5 w-5" /> },
-  { to: "/admin",      label: "Admin Panel",    icon: <Settings className="h-5 w-5" />, adminOnly: true },
+  { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { to: "/recommend", label: "AI Recommend", icon: <Sparkles className="h-5 w-5" /> },
+  { to: "/permits", label: "My Permits", icon: <CreditCard className="h-5 w-5" /> },
+  { to: "/analytics", label: "Analytics", icon: <BarChart2 className="h-5 w-5" /> },
+  { to: "/admin", label: "Admin Panel", icon: <Settings className="h-5 w-5" />, adminOnly: true },
 ];
 
 export default function Sidebar() {
   const { role, signOut } = useAuth();
-
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "admin");
 
   return (
     <nav
-      className="flex h-full flex-col bg-[#1a2744] text-white"
+      className="border-b border-[#dde5ef] bg-[linear-gradient(180deg,_#0f2f63_0%,_#143870_65%,_#1a447f_100%)] px-4 py-4 text-white shadow-[0_26px_70px_-44px_rgba(15,47,99,0.85)] lg:flex lg:h-full lg:flex-col lg:border-b-0 lg:border-r lg:px-5 lg:py-6"
       aria-label="Main navigation"
     >
-      {/* Brand */}
-      <div className="px-5 py-5">
-        <span className="text-xl font-bold tracking-tight text-white">
-          Husky<span className="text-yellow-400">Park</span>
-        </span>
-        <p className="mt-0.5 text-xs text-blue-300">SCSU Parking Predictor</p>
+      <div className="mb-4 flex items-center justify-between lg:mb-8 lg:block">
+        <div>
+          <span className="text-2xl font-semibold tracking-tight text-white">
+            Husky<span className="text-[var(--accent-strong)]">Park</span>
+          </span>
+          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-300">
+            Parking Predictor
+          </p>
+        </div>
+
+        <button onClick={signOut} className="button-secondary px-3 py-2 lg:hidden">
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          Sign out
+        </button>
       </div>
 
-      {/* Navigation links */}
-      <ul className="flex-1 space-y-1 px-3 py-2">
+      <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-1 lg:flex-col lg:overflow-visible">
         {items.map((item) => (
-          <li key={item.to}>
+          <li key={item.to} className="flex-shrink-0">
             <NavLink
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition
-                ${
+                `flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? "border-l-4 border-yellow-400 bg-white/10 text-white"
-                    : "text-blue-200 hover:bg-white/10 hover:text-white"
+                    ? "bg-white text-[var(--accent-deep)] shadow-[0_18px_40px_-24px_rgba(255,255,255,0.35)]"
+                    : "text-slate-200 hover:bg-white/10 hover:text-white"
                 }`
               }
             >
@@ -64,16 +70,13 @@ export default function Sidebar() {
         ))}
       </ul>
 
-      {/* Sign out */}
-      <div className="border-t border-white/10 px-3 py-3">
+      <div className="mt-6 hidden border-t border-white/15 pt-4 lg:block">
         <button
           onClick={signOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
-            text-blue-200 transition hover:bg-white/10 hover:text-white
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+          className="inline-flex w-full justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/18"
         >
           <LogOut className="h-5 w-5" aria-hidden="true" />
-          Sign Out
+          Sign out
         </button>
       </div>
     </nav>

@@ -16,33 +16,34 @@ export default function AdminEvents() {
   });
 
   return (
-    <section>
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <Calendar className="h-5 w-5 text-blue-600" />
-          Campus Events
-        </h2>
-        <button
-          className="flex items-center gap-1.5 rounded-lg bg-[#1a2744] px-3 py-2 text-xs
-            font-semibold text-white hover:bg-[#243561] transition"
-        >
-          <Plus className="h-4 w-4" />
-          New Event
-        </button>
-      </div>
+    <main className="page-shell">
+      <section className="hero-panel">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="eyebrow">Admin</p>
+            <h1 className="mt-4 flex items-center gap-3 text-3xl font-semibold tracking-tight text-slate-950">
+              <Calendar className="h-6 w-6 text-[var(--accent-strong)]" />
+              Campus Events
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Review event impact and remove stale entries that may distort parking predictions.
+            </p>
+          </div>
+          <button className="button-primary">
+            <Plus className="h-4 w-4" />
+            New event
+          </button>
+        </div>
+      </section>
 
-      {isLoading && <p className="text-sm text-gray-500">Loading…</p>}
+      {isLoading && <p className="empty-state">Loading events…</p>}
 
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {events.map((ev) => (
-          <li
-            key={ev.event_id}
-            className="flex items-center justify-between rounded-xl border border-gray-200
-              bg-white px-4 py-3 shadow-sm"
-          >
+          <li key={ev.event_id} className="surface-card flex items-center justify-between gap-4">
             <div>
-              <p className="font-medium text-gray-900">{ev.title}</p>
-              <p className="text-xs text-gray-500">
+              <p className="font-medium text-slate-950">{ev.title}</p>
+              <p className="text-sm text-slate-500">
                 {ev.location} · {new Date(ev.event_start).toLocaleDateString()}
                 {ev.expected_attendance != null && ` · ~${ev.expected_attendance.toLocaleString()} attendees`}
               </p>
@@ -51,8 +52,7 @@ export default function AdminEvents() {
               onClick={() => {
                 if (confirm(`Delete "${ev.title}"?`)) deleteEvent.mutate(ev.event_id);
               }}
-              className="rounded p-1 text-gray-400 hover:text-red-500 transition
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              className="button-secondary px-3 py-2 text-rose-600 hover:text-rose-700"
               aria-label={`Delete ${ev.title}`}
             >
               <Trash2 className="h-4 w-4" />
@@ -60,6 +60,6 @@ export default function AdminEvents() {
           </li>
         ))}
       </ul>
-    </section>
+    </main>
   );
 }

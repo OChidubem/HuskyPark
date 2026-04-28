@@ -3,15 +3,168 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --page-bg: #f4f3ef;
+    --page-bg-alt: #fcfbf7;
+    --surface: rgba(255, 255, 255, 0.74);
+    --surface-strong: rgba(255, 255, 255, 0.92);
+    --surface-raised: rgba(248, 247, 242, 0.92);
+    --stroke: rgba(14, 41, 84, 0.12);
+    --text-primary: #132e5b;
+    --accent-strong: #d7af2c;
+    --accent-deep: #0f2f63;
+    --glow: 0 28px 70px -42px rgba(15, 47, 99, 0.3);
+  }
+
   html {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(215, 175, 44, 0.18), transparent 30%),
+      radial-gradient(circle at top right, rgba(29, 78, 216, 0.08), transparent 34%),
+      linear-gradient(180deg, #fbfaf6 0%, var(--page-bg) 100%);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Accessible focus ring for all interactive elements */
+  body {
+    min-height: 100vh;
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  ::selection {
+    background: rgba(215, 175, 44, 0.24);
+  }
+
   *:focus-visible {
-    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+    @apply outline-none ring-2 ring-amber-500 ring-offset-2;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10;
+  }
+
+  .surface-panel {
+    @apply rounded-[32px] border px-6 py-6 backdrop-blur-xl;
+    background: var(--surface);
+    border-color: var(--stroke);
+    box-shadow: var(--glow);
+  }
+
+  .surface-card {
+    @apply rounded-[28px] border px-5 py-5 backdrop-blur-xl sm:px-6 sm:py-6;
+    background: var(--surface-strong);
+    border-color: var(--stroke);
+    box-shadow: var(--glow);
+  }
+
+  .hero-panel {
+    @apply surface-panel mb-5 overflow-hidden sm:mb-6;
+  }
+
+  .button-primary {
+    @apply inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition duration-200;
+    background: linear-gradient(135deg, #0f2f63 0%, #224f96 100%);
+    box-shadow: 0 18px 40px -24px rgba(15, 47, 99, 0.5);
+  }
+
+  .button-primary:hover {
+    transform: translateY(-1px);
+  }
+
+  .button-secondary {
+    @apply inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium text-slate-700 transition;
+    background: rgba(255, 255, 255, 0.84);
+    border-color: var(--stroke);
+  }
+
+  .button-secondary:hover {
+    color: var(--accent-deep);
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm transition placeholder:text-slate-400;
+    color: var(--accent-deep);
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(14, 41, 84, 0.14);
+  }
+
+  .input-field:focus {
+    @apply ring-0;
+    border-color: rgba(215, 175, 44, 0.7);
+    box-shadow: 0 0 0 4px rgba(215, 175, 44, 0.14);
+  }
+
+  .input-label {
+    @apply mb-2 block text-sm font-medium text-slate-700;
+  }
+
+  .eyebrow {
+    color: #697b97;
+    @apply text-xs font-semibold uppercase tracking-[0.24em];
+  }
+
+  .section-title {
+    color: var(--accent-deep);
+    @apply text-lg font-semibold tracking-tight;
+  }
+
+  .section-copy {
+    @apply text-sm text-slate-500;
+  }
+
+  .empty-state {
+    @apply rounded-[28px] border px-6 py-16 text-center text-sm text-slate-500;
+    background: rgba(255, 255, 255, 0.75);
+    border-color: var(--stroke);
+    box-shadow: var(--glow);
+  }
+
+  .metric-row {
+    @apply flex items-center justify-between rounded-[24px] border px-4 py-4;
+    background: var(--surface-raised);
+    border-color: rgba(14, 41, 84, 0.1);
+  }
+
+  .rank-chip {
+    @apply flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white;
+    background: linear-gradient(135deg, #c99712 0%, #e4bc41 100%);
+  }
+
+  .auth-shell {
+    @apply mx-auto grid min-h-screen max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8;
+  }
+
+  .auth-hero {
+    @apply hidden lg:block;
+  }
+
+  .auth-card {
+    @apply rounded-[36px] border p-6 backdrop-blur-xl sm:p-8;
+    background: var(--surface-strong);
+    border-color: var(--stroke);
+    box-shadow: var(--glow);
+  }
+
+  .presentation-headline {
+    color: var(--accent-deep);
+    @apply text-4xl font-semibold tracking-tight sm:text-5xl;
+  }
+
+  .presentation-band {
+    background: linear-gradient(90deg, rgba(215, 175, 44, 0.95), rgba(236, 210, 113, 0.95));
+  }
+
+  .presentation-shell {
+    @apply rounded-[36px] border;
+    border-color: rgba(15, 47, 99, 0.1);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(252, 250, 245, 0.92)),
+      radial-gradient(circle at top right, rgba(215, 175, 44, 0.12), transparent 22%);
+    box-shadow: 0 30px 80px -46px rgba(15, 47, 99, 0.34);
   }
 }

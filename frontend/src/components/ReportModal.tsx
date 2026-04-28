@@ -10,9 +10,9 @@ interface Props {
 }
 
 const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
-  { value: "found_spot",    label: "Found a spot" },
+  { value: "found_spot", label: "Found a spot" },
   { value: "hard_to_find", label: "Hard to find" },
-  { value: "lot_full",     label: "Lot is full" },
+  { value: "lot_full", label: "Lot is full" },
 ];
 
 export default function ReportModal({ lot, onClose }: Props) {
@@ -43,20 +43,19 @@ export default function ReportModal({ lot, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-modal-title"
     >
-      <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <h2 id="report-modal-title" className="font-semibold text-gray-900">
+      <div className="w-full max-w-md rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.6)] backdrop-blur-xl">
+        <div className="flex items-center justify-between border-b border-slate-200/80 px-6 py-5">
+          <h2 id="report-modal-title" className="font-semibold tracking-tight text-slate-950">
             Report — {lot.lot_name}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="button-secondary rounded-full px-3 py-2 text-slate-500 hover:text-slate-700"
             aria-label="Close modal"
           >
             <X className="h-5 w-5" />
@@ -64,35 +63,36 @@ export default function ReportModal({ lot, onClose }: Props) {
         </div>
 
         {submitted ? (
-          <p className="px-5 py-8 text-center text-green-600 font-medium">
+          <p className="px-6 py-10 text-center font-medium text-emerald-600">
             Thanks! Report submitted.
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
+          <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
             <fieldset>
-              <legend className="mb-2 text-sm font-medium text-gray-700">
-                Status <span className="text-red-500">*</span>
-              </legend>
+              <legend className="input-label">Status</legend>
               <div className="space-y-2">
                 {STATUS_OPTIONS.map((opt) => (
-                  <label key={opt.value} className="flex cursor-pointer items-center gap-3">
+                  <label
+                    key={opt.value}
+                    className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200/80 bg-[var(--surface-raised)] px-4 py-3"
+                  >
                     <input
                       type="radio"
                       name="status"
                       value={opt.value}
                       checked={status === opt.value}
                       onChange={() => setStatus(opt.value)}
-                      className="accent-blue-600"
+                      className="accent-[var(--accent-strong)]"
                     />
-                    <span className="text-sm text-gray-700">{opt.label}</span>
+                    <span className="text-sm text-slate-700">{opt.label}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
 
             <div>
-              <label htmlFor="approx" className="mb-1 block text-sm font-medium text-gray-700">
-                Estimated open spots <span className="text-gray-400 font-normal">(optional)</span>
+              <label htmlFor="approx" className="input-label">
+                Estimated open spots
               </label>
               <input
                 id="approx"
@@ -100,15 +100,14 @@ export default function ReportModal({ lot, onClose }: Props) {
                 min={0}
                 value={approx}
                 onChange={(e) => setApprox(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-                  focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="input-field"
                 placeholder="e.g. 5"
               />
             </div>
 
             <div>
-              <label htmlFor="note" className="mb-1 block text-sm font-medium text-gray-700">
-                Note <span className="text-gray-400 font-normal">(optional)</span>
+              <label htmlFor="note" className="input-label">
+                Note
               </label>
               <textarea
                 id="note"
@@ -116,23 +115,16 @@ export default function ReportModal({ lot, onClose }: Props) {
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={300}
                 rows={2}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-                  focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="input-field"
                 placeholder="Any extra context…"
               />
             </div>
 
             {mutation.isError && (
-              <p className="text-sm text-red-600">Submission failed. Please try again.</p>
+              <p className="text-sm text-rose-600">Submission failed. Please try again.</p>
             )}
 
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white
-                hover:bg-blue-700 disabled:opacity-60 focus:outline-none
-                focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
+            <button type="submit" disabled={mutation.isPending} className="button-primary w-full justify-center">
               {mutation.isPending ? "Submitting…" : "Submit Report"}
             </button>
           </form>
