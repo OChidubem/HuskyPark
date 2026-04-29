@@ -111,6 +111,24 @@ export interface CampusEvent {
   expected_attendance: number | null;
 }
 
+// ── Weather ───────────────────────────────────────────────────
+
+export interface WeatherSnapshot {
+  condition: string;
+  description?: string;
+  temperature_f: number | null;
+  feels_like_f?: number | null;
+  humidity_pct?: number | null;
+  wind_speed_mph: number | null;
+  wind_gust_mph?: number | null;
+  visibility_miles?: number | null;
+  icon?: string;
+  city?: string;
+  source?: string;
+  live?: boolean;
+  recorded_at?: string | null;
+}
+
 // ── AI Recommend ──────────────────────────────────────────────
 
 export interface LotRecommendation {

@@ -7,9 +7,9 @@ interface Props {
 }
 
 const COLOR_CLASSES: Record<ProbColor, string> = {
-  green: "border-emerald-200 bg-emerald-50/90 text-emerald-700",
-  yellow: "border-amber-200 bg-amber-50/90 text-amber-700",
-  red: "border-rose-200 bg-rose-50/90 text-rose-700",
+  green: "border-emerald-200 bg-[linear-gradient(180deg,_rgba(236,253,245,0.98),_rgba(220,252,231,0.92))] text-emerald-800",
+  yellow: "border-amber-200 bg-[linear-gradient(180deg,_rgba(255,251,235,0.98),_rgba(254,243,199,0.92))] text-amber-800",
+  red: "border-rose-200 bg-[linear-gradient(180deg,_rgba(255,241,242,0.98),_rgba(254,226,226,0.92))] text-rose-800",
 };
 
 const LABEL: Record<ProbColor, string> = {

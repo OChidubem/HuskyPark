@@ -11,8 +11,9 @@ from app.auth.deps import require_auth
 from app.database.mongo import get_mongo_db
 from app.database.postgres import get_db
 from app.models.schemas import DashboardLotItem
-from app.services.cache import DASHBOARD_TTL, cache_get, cache_set
+from app.services.cache import DASHBOARD_TTL, cache_delete, cache_get, cache_set
 from app.services.prediction import score_to_color
+from app.services.recompute import run_recompute
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -95,3 +96,14 @@ async def get_dashboard(
         result = [i for i in result if i["lot_type"] == permit_type.lower()]
 
     return result
+
+
+@router.post("/recompute")
+async def trigger_recompute(
+    _user: dict = Depends(require_auth),
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    """Force a fresh prediction cycle for all lots, then bust the dashboard cache."""
+    summary = await run_recompute(conn)
+    await cache_delete(CACHE_KEY)
+    return {"status": "ok", **summary}

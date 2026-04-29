@@ -6,9 +6,12 @@ import type { Permit, PermitCategory } from "../types";
 
 function statusBadge(status: string) {
   const styles: Record<string, string> = {
-    active: "bg-emerald-100 text-emerald-700",
-    expired: "bg-slate-100 text-slate-600",
-    revoked: "bg-rose-100 text-rose-700",
+    active:
+      "border border-emerald-200 bg-[linear-gradient(180deg,_rgba(236,253,245,0.98),_rgba(220,252,231,0.92))] text-emerald-800",
+    expired:
+      "border border-slate-200 bg-[linear-gradient(180deg,_rgba(248,250,252,0.98),_rgba(241,245,249,0.92))] text-slate-600",
+    revoked:
+      "border border-rose-200 bg-[linear-gradient(180deg,_rgba(255,241,242,0.98),_rgba(254,226,226,0.92))] text-rose-800",
   };
 
   return (

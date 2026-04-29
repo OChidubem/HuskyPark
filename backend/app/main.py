@@ -1,9 +1,7 @@
 """HuskyPark Predictor — FastAPI application entry point."""
 
-import json
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -13,19 +11,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.mongo import close_client
 from app.database.postgres import close_pool, get_pool
-from app.routers import analytics, auth, dashboard, events, lots, permits, recommend, reports, users
+from app.routers import analytics, auth, dashboard, events, lots, permits, recommend, reports, users, weather
 from app.services.cache import cache_delete, close_redis
+from app.services.recompute import run_recompute
 
 logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
 
 def _owm_to_condition(weather_id: int, wind_mph: float) -> str:
-    """Map OpenWeatherMap weather ID to our internal condition string."""
     if 200 <= weather_id < 600:
         return "rain"
     if 600 <= weather_id < 700:
-        # Blizzard: heavy shower snow (622) or blowing snow conditions + high wind
         return "blizzard" if (wind_mph >= 35 or weather_id >= 620) else "snow"
     if 700 <= weather_id < 800:
         return "fog"
@@ -73,76 +70,36 @@ async def _refresh_weather() -> None:
         logger.exception("Weather refresh failed")
 
 
-async def _recompute_predictions() -> None:
-    """Recompute predictions for current + next 3 hours for all active lots, then bust cache."""
-    from app.services.prediction import compute_probability
+async def _refresh_events() -> None:
+    """Scrape SCSU calendar and upsert new events."""
+    try:
+        from app.services.events_scraper import run_events_sync
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            added = await run_events_sync(conn)
+        if added:
+            logger.info("Events sync: %d new events added", added)
+    except Exception:
+        logger.exception("Events sync failed")
 
+
+async def _recompute_predictions() -> None:
+    """Background recompute job — delegates to shared service, then busts cache."""
     pool = await get_pool()
     async with pool.acquire() as conn:
-        lot_rows = await conn.fetch(
-            "SELECT lot_id FROM parking_lot WHERE is_active = TRUE"
-        )
-        weather_row = await conn.fetchrow(
-            "SELECT condition FROM weather_snapshot ORDER BY recorded_at DESC LIMIT 1"
-        )
-        now = datetime.utcnow()
-        active_event_rows = await conn.fetch(
-            """
-            SELECT title, expected_attendance
-            FROM campus_event
-            WHERE event_start <= $1 AND event_end >= $1
-            """,
-            now,
-        )
-        weather_condition = str(weather_row["condition"]) if weather_row else "clear"
-        active_events = []
-        for row in active_event_rows:
-            attendance = int(row["expected_attendance"] or 0)
-            impact = "high" if attendance >= 2000 else "medium" if attendance >= 700 else "low"
-            active_events.append({"title": row["title"], "impact_level": impact})
-
-        # Generate predictions for right now and the next 3 hours
-        targets = [now + timedelta(hours=h) for h in (0, 1, 2, 3)]
-        for lot in lot_rows:
-            for target in targets:
-                prediction = await compute_probability(
-                    conn,
-                    lot["lot_id"],
-                    target,
-                    weather_condition=weather_condition,
-                    active_events=active_events,
-                )
-                await conn.execute(
-                    """
-                    INSERT INTO parking_prediction
-                        (lot_id, predicted_at, target_time, prob_score,
-                         confidence_level, factors_summary, model_version)
-                    VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)
-                    """,
-                    prediction["lot_id"],
-                    prediction["predicted_at"],
-                    prediction["target_time"],
-                    prediction["prob_score"],
-                    prediction["confidence_level"],
-                    json.dumps(prediction["factors_summary"]),
-                    prediction["model_version"],
-                )
-
+        summary = await run_recompute(conn)
     await cache_delete("dashboard:latest")
-    logger.info(
-        "Predictions recomputed: %d lots × %d time slots (weather: %s)",
-        len(lot_rows),
-        len(targets),
-        weather_condition,
-    )
+    logger.info("Scheduled recompute: %s", summary)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await get_pool()
     await _refresh_weather()
+    await _refresh_events()
     await _recompute_predictions()
     scheduler.add_job(_refresh_weather, "interval", minutes=10, id="weather")
+    scheduler.add_job(_refresh_events, "interval", hours=1, id="events")
     scheduler.add_job(_recompute_predictions, "interval", minutes=15, id="recompute")
     scheduler.start()
     yield
@@ -178,6 +135,7 @@ app.include_router(events.router, prefix=PREFIX)
 app.include_router(recommend.router, prefix=PREFIX)
 app.include_router(analytics.router, prefix=PREFIX)
 app.include_router(users.router, prefix=PREFIX)
+app.include_router(weather.router, prefix=PREFIX)
 
 
 @app.get("/health")

@@ -1,9 +1,28 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CarFront, MapPinned, RefreshCw, Route, Sparkles } from "lucide-react";
-import { useDashboard } from "../hooks/useDashboard";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CarFront,
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Droplets,
+  Eye,
+  MapPinned,
+  RefreshCw,
+  Route,
+  Sparkles,
+  Sun,
+  Thermometer,
+  Wind,
+  Zap,
+} from "lucide-react";
+import { useDashboard, useWeather, useEvents } from "../hooks/useDashboard";
 import AppleParkingMap from "../components/AppleParkingMap";
 import LotCard from "../components/LotCard";
+import api from "../lib/api";
 import type { DashboardLot } from "../types";
 
 function LotCardSkeleton() {
@@ -38,6 +57,144 @@ function useUpdatedAgo(dataUpdatedAt: number) {
   return label;
 }
 
+function WeatherIcon({ condition, size = "md" }: { condition: string; size?: "sm" | "md" | "lg" }) {
+  const cls = size === "lg" ? "h-8 w-8" : size === "sm" ? "h-3.5 w-3.5" : "h-5 w-5";
+  const c = condition.toLowerCase();
+  if (c.includes("thunder")) return <Zap className={`${cls} text-violet-500`} />;
+  if (c.includes("snow") || c.includes("blizzard")) return <CloudSnow className={`${cls} text-sky-400`} />;
+  if (c.includes("rain") || c.includes("drizzle")) return <CloudRain className={`${cls} text-blue-500`} />;
+  if (c.includes("fog") || c.includes("mist") || c.includes("haze")) return <Eye className={`${cls} text-slate-400`} />;
+  if (c.includes("clear") || c.includes("sunny")) return <Sun className={`${cls} text-amber-500`} />;
+  if (c.includes("mostly clear") || c.includes("few clouds")) return <Sun className={`${cls} text-amber-400`} />;
+  if (c.includes("partly")) return <Cloud className={`${cls} text-sky-400`} />;
+  return <Cloud className={`${cls} text-slate-400`} />;
+}
+
+function WeatherCard() {
+  const { data: weather, isLoading } = useWeather();
+
+  if (isLoading) {
+    return (
+      <div className="rounded-[24px] border border-[var(--stroke)] bg-white p-4 shadow-sm">
+        <div className="skeleton-line h-3 w-20 mb-2 rounded-full" />
+        <div className="skeleton-line h-6 w-32 rounded-full" />
+      </div>
+    );
+  }
+
+  if (!weather || !weather.temperature_f) {
+    return (
+      <div className="rounded-[24px] border border-[var(--stroke)] bg-white px-4 py-4">
+        <p className="text-xs text-slate-400">Weather unavailable — add OPENWEATHER_API_KEY to .env</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[24px] border border-[var(--stroke)] bg-white px-5 py-4 shadow-[0_4px_20px_rgba(15,47,99,0.10)]">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <WeatherIcon condition={weather.condition} size="lg" />
+          <div>
+            <p className="text-2xl font-bold tracking-tight text-slate-900">
+              {Math.round(weather.temperature_f)}°F
+            </p>
+            <p className="text-sm font-medium text-slate-600">
+              {weather.description ?? weather.condition}
+            </p>
+          </div>
+        </div>
+        {weather.city && (
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            {weather.city}, MN
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        {weather.feels_like_f != null && (
+          <span className="flex items-center gap-1.5 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-slate-600">
+            <Thermometer className="h-3.5 w-3.5 text-orange-400" />
+            Feels {Math.round(weather.feels_like_f)}°F
+          </span>
+        )}
+        {weather.humidity_pct != null && (
+          <span className="flex items-center gap-1.5 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-slate-600">
+            <Droplets className="h-3.5 w-3.5 text-blue-400" />
+            {weather.humidity_pct}% humidity
+          </span>
+        )}
+        {weather.wind_speed_mph != null && weather.wind_speed_mph > 0 && (
+          <span className="flex items-center gap-1.5 rounded-full bg-[var(--surface-raised)] px-3 py-1.5 text-xs font-medium text-slate-600">
+            <Wind className="h-3.5 w-3.5 text-slate-400" />
+            {weather.wind_speed_mph} mph
+            {weather.wind_gust_mph ? ` · ${weather.wind_gust_mph} mph gust` : ""}
+          </span>
+        )}
+        {weather.visibility_miles != null && weather.visibility_miles < 5 && (
+          <span className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700">
+            <Eye className="h-3.5 w-3.5" />
+            {weather.visibility_miles} mi visibility
+          </span>
+        )}
+      </div>
+
+      {weather.live === false && (
+        <p className="mt-2 text-[10px] text-slate-400">
+          Cached data · Add OPENWEATHER_API_KEY for live weather
+        </p>
+      )}
+    </div>
+  );
+}
+
+function EventsStrip() {
+  const { data: events = [] } = useEvents();
+  const now = new Date();
+  const soon = new Date(now.getTime() + 8 * 60 * 60 * 1000); // next 8 hours
+
+  const upcoming = events
+    .filter((e) => {
+      const start = new Date(e.event_start);
+      const end = new Date(e.event_end);
+      return end > now && start <= soon;
+    })
+    .slice(0, 3);
+
+  if (upcoming.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-1">
+      <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+        <CalendarDays className="h-3.5 w-3.5" />
+        Today
+      </span>
+      {upcoming.map((ev) => {
+        const att = ev.expected_attendance ?? 0;
+        const isHigh = att >= 2000;
+        const isMed = att >= 700;
+        return (
+          <span
+            key={ev.event_id}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+              isHigh
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : isMed
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-slate-200 bg-slate-50 text-slate-600"
+            }`}
+          >
+            {isHigh || isMed ? <AlertTriangle className="h-3 w-3" /> : null}
+            {ev.title}
+            <span className="opacity-60">·</span>
+            {new Date(ev.event_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 const PERMIT_FILTERS = [
   { value: "", label: "All Lots" },
   { value: "commuter", label: "Commuter" },
@@ -48,6 +205,7 @@ const PERMIT_FILTERS = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [permitType, setPermitType] = useState("");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"high" | "low">("high");
@@ -56,6 +214,19 @@ export default function Dashboard() {
     permitType || undefined
   );
   const updatedAgo = useUpdatedAgo(dataUpdatedAt);
+
+  const recompute = useMutation({
+    mutationFn: () => api.post("/dashboard/recompute"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const handleRefresh = async () => {
+    await recompute.mutateAsync();
+  };
+
+  const isRefreshing = recompute.isPending || isFetching;
 
   const filtered = lots
     .filter((l) => l.lot_name.toLowerCase().includes(search.toLowerCase()))
@@ -79,9 +250,9 @@ export default function Dashboard() {
         <div className="presentation-band h-2 w-full" />
         <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-8">
           <div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="h-12 w-3 rounded-full bg-[var(--accent-strong)]" />
-              <p className="eyebrow">System Idea · The Solution</p>
+              <p className="eyebrow">Live · St. Cloud State</p>
             </div>
             <h1 className="presentation-headline mt-6">HuskyPark Predictor at a glance.</h1>
             <p className="mt-6 max-w-3xl text-lg leading-9 text-slate-700">
@@ -122,49 +293,55 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-4 self-start">
-            <div className="rounded-[28px] border border-[#dbe5f0] bg-white px-5 py-5 shadow-[0_24px_60px_-40px_rgba(15,47,99,0.28)]">
+            {/* Best lot card */}
+            <div className="rounded-[28px] border border-[var(--stroke)] bg-white px-5 py-5 shadow-[0_4px_24px_rgba(15,47,99,0.12)]">
               <div className="flex items-start justify-between gap-5">
                 <div>
-                  <p className="text-2xl font-semibold text-[var(--accent-deep)]">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">
+                    Best available now
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-[var(--accent-deep)]">
                     {bestLot?.lot_name ?? "No lots yet"}
                   </p>
-                  <p className="mt-2 text-lg text-slate-500">
-                    {bestLot ? "Best available right now" : "Waiting for live data"}
+                  <p className="mt-1 text-sm text-slate-500 capitalize">
+                    {bestLot ? `${bestLot.lot_type} · ${bestLot.confidence_level} confidence` : "Waiting for live data"}
                   </p>
                 </div>
-                <p className="text-6xl font-semibold tracking-tight text-emerald-600">
+                <p className="text-6xl font-bold tracking-tight text-emerald-600">
                   {bestLot ? `${Math.round(bestLot.prob_score * 100)}%` : "--"}
                 </p>
               </div>
             </div>
 
+            {/* Stats row */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-[#dbe5f0] bg-white/88 px-5 py-5">
-                <div className="flex items-center gap-3 text-[var(--accent-deep)]">
+              <div className="rounded-[24px] border border-[var(--stroke)] bg-white px-5 py-5 shadow-[0_2px_12px_rgba(15,47,99,0.08)]">
+                <div className="flex items-center gap-2 text-emerald-600">
                   <MapPinned className="h-5 w-5" />
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em]">Green lots</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em]">Open lots</p>
                 </div>
-                <p className="mt-3 text-4xl font-semibold text-[var(--accent-deep)]">
+                <p className="mt-3 text-4xl font-bold text-[var(--accent-deep)]">
                   {greenCount}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">High-confidence openings right now.</p>
+                <p className="mt-1 text-sm text-slate-500">High availability right now</p>
               </div>
 
-              <div className="rounded-[24px] border border-[#dbe5f0] bg-white/88 px-5 py-5">
-                <div className="flex items-center gap-3 text-[var(--accent-deep)]">
+              <div className="rounded-[24px] border border-[var(--stroke)] bg-white px-5 py-5 shadow-[0_2px_12px_rgba(15,47,99,0.08)]">
+                <div className="flex items-center gap-2 text-rose-600">
                   <CarFront className="h-5 w-5" />
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em]">Use caution</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em]">Use caution</p>
                 </div>
-                <p className="mt-3 text-xl font-semibold text-[var(--accent-deep)]">
-                  {cautionLot?.lot_name ?? "No lot flagged"}
+                <p className="mt-3 text-xl font-bold text-[var(--accent-deep)]">
+                  {cautionLot?.lot_name ?? "None flagged"}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  {cautionLot
-                    ? `${Math.round(cautionLot.prob_score * 100)}% availability`
-                    : "No low-availability lot is currently visible."}
+                <p className="mt-1 text-sm text-slate-500">
+                  {cautionLot ? `${Math.round(cautionLot.prob_score * 100)}% availability` : "All lots look clear"}
                 </p>
               </div>
             </div>
+
+            {/* Weather card */}
+            <WeatherCard />
           </div>
         </div>
       </section>
@@ -178,7 +355,7 @@ export default function Dashboard() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            {updatedAgo && !isFetching && (
+            {updatedAgo && !isRefreshing && (
               <span className="flex items-center gap-1.5 text-xs text-slate-400">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
@@ -188,18 +365,20 @@ export default function Dashboard() {
               </span>
             )}
             <button
-              onClick={() => refetch()}
-              disabled={isFetching}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
               className="button-secondary self-start lg:self-auto"
-              aria-label="Refresh dashboard"
+              aria-label="Recompute predictions and refresh dashboard"
             >
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-              {isFetching ? "Refreshing" : "Refresh"}
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              {isRefreshing ? "Recomputing…" : "Refresh"}
             </button>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 lg:grid-cols-[1.25fr_0.85fr_0.85fr]">
+        <EventsStrip />
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-[1.25fr_0.85fr_0.85fr]">
           <input
             type="search"
             value={search}
@@ -246,7 +425,10 @@ export default function Dashboard() {
 
       {isError && (
         <div className="surface-card border-rose-200/80 bg-rose-50/80 text-sm text-rose-700">
-          Failed to load dashboard data. <button onClick={() => refetch()} className="underline">Retry</button>
+          Failed to load dashboard data.{" "}
+          <button onClick={() => refetch()} className="underline">
+            Retry
+          </button>
         </div>
       )}
 
@@ -269,9 +451,9 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="grid gap-4 px-6 py-6 sm:grid-cols-2 lg:px-8 xl:grid-cols-3">
-              {filtered.map((lot) => (
-                <LotCard key={lot.lot_id} lot={lot} onDetailClick={handleDetail} />
-              ))}
+                {filtered.map((lot) => (
+                  <LotCard key={lot.lot_id} lot={lot} onDetailClick={handleDetail} />
+                ))}
               </div>
             </section>
           )}

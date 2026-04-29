@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigation, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   CircleMarker,
   MapContainer,
@@ -91,7 +92,20 @@ function MapViewport({
   return null;
 }
 
+function scoreTextColor(score: number) {
+  if (score >= 0.65) return "#059669";
+  if (score >= 0.35) return "#d97706";
+  return "#e11d48";
+}
+
+function scoreBg(score: number) {
+  if (score >= 0.65) return "#ecfdf5";
+  if (score >= 0.35) return "#fffbeb";
+  return "#fff1f2";
+}
+
 export default function AppleParkingMap({ lots }: Props) {
+  const navigate = useNavigate();
   const [selectedLotId, setSelectedLotId] = useState<number | null>(null);
 
   const mappedLots = useMemo(
@@ -319,18 +333,54 @@ export default function AppleParkingMap({ lots }: Props) {
                       click: () => setSelectedLotId(lot.lot_id),
                     }}
                   >
-                    <Popup>
-                      <div className="min-w-[160px]">
-                        <p className="text-sm font-semibold text-slate-900">{lot.lot_name}</p>
-                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                          {lot.lot_type}
+                    <Popup minWidth={200}>
+                      <div style={{ minWidth: 200, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{lot.lot_name}</span>
+                          <span style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: scoreTextColor(lot.prob_score),
+                            background: scoreBg(lot.prob_score),
+                            borderRadius: 8,
+                            padding: "2px 8px",
+                          }}>
+                            {Math.round(lot.prob_score * 100)}%
+                          </span>
+                        </div>
+                        <p style={{ marginTop: 4, fontSize: 11, textTransform: "capitalize", color: "#64748b" }}>
+                          {lot.lot_type} · {lot.confidence_level} confidence
                         </p>
-                        <p className="mt-2 text-sm text-slate-700">
-                          {availabilityLabel(lot.color)} · {Math.round(lot.prob_score * 100)}%
+                        {/* Availability bar */}
+                        <div style={{ marginTop: 8, height: 5, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+                          <div style={{
+                            height: "100%",
+                            width: `${Math.round(lot.prob_score * 100)}%`,
+                            background: markerColor(lot.color),
+                            borderRadius: 99,
+                          }} />
+                        </div>
+                        <p style={{ marginTop: 6, fontSize: 12, color: markerColor(lot.color), fontWeight: 600 }}>
+                          {availabilityLabel(lot.color)}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {lot.confidence_level} confidence
-                        </p>
+                        <button
+                          onClick={() => navigate(`/lots/${lot.lot_id}`)}
+                          style={{
+                            marginTop: 10,
+                            width: "100%",
+                            padding: "7px 0",
+                            background: "#0f2f63",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 10,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            letterSpacing: "0.02em",
+                          }}
+                        >
+                          View Prediction Timeline →
+                        </button>
                       </div>
                     </Popup>
                   </CircleMarker>

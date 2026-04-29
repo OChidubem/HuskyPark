@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../lib/api";
-import type { DashboardLot } from "../types";
+import type { CampusEvent, DashboardLot, WeatherSnapshot } from "../types";
 
 export function useDashboard(permitType?: string) {
   return useQuery<DashboardLot[]>({
@@ -10,7 +10,7 @@ export function useDashboard(permitType?: string) {
       const { data } = await api.get("/dashboard", { params });
       return data;
     },
-    refetchInterval: 60_000, // poll every 60 seconds
+    refetchInterval: 60_000,
     staleTime: 55_000,
   });
 }
@@ -25,5 +25,29 @@ export function useLotPredictions(lotId: number, hours = 24) {
       return data;
     },
     enabled: lotId > 0,
+  });
+}
+
+export function useWeather() {
+  return useQuery<WeatherSnapshot>({
+    queryKey: ["weather"],
+    queryFn: async () => {
+      const { data } = await api.get("/weather/current");
+      return data;
+    },
+    refetchInterval: 10 * 60_000, // every 10 min
+    staleTime: 9 * 60_000,
+  });
+}
+
+export function useEvents() {
+  return useQuery<CampusEvent[]>({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const { data } = await api.get("/events");
+      return data;
+    },
+    refetchInterval: 60 * 60_000, // every hour
+    staleTime: 55 * 60_000,
   });
 }

@@ -38,7 +38,8 @@ export default function LotCard({ lot, onDetailClick }: Props) {
   return (
     <>
       <article
-        className={`relative overflow-hidden rounded-[28px] border border-[#dbe5f0] bg-white shadow-[0_20px_55px_-38px_rgba(15,47,99,0.3)] transition duration-200 hover:-translate-y-1 ${BORDER_COLOR[lot.color]}`}
+        className={`relative overflow-hidden rounded-[28px] border bg-[linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(247,250,255,0.92))] shadow-[0_16px_32px_-24px_rgba(18,50,95,0.18)] transition duration-150 hover:-translate-y-1 hover:shadow-[0_22px_42px_-24px_rgba(18,50,95,0.22)] ${BORDER_COLOR[lot.color]}`}
+        style={{ borderColor: "var(--stroke)" }}
       >
         <div className={`absolute inset-y-0 left-0 w-5 ${ACCENT_STRIP[lot.color]}`} />
         <button className="w-full px-1 text-left" onClick={() => onDetailClick(lot)} aria-label={`View details for ${lot.lot_name}`}>
@@ -64,12 +65,28 @@ export default function LotCard({ lot, onDetailClick }: Props) {
               </p>
               <span className="mt-2 flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-slate-400">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span
+                    className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${
+                      lot.color === "green"
+                        ? "bg-emerald-400"
+                        : lot.color === "yellow"
+                          ? "bg-amber-400"
+                          : "bg-rose-400"
+                    }`}
+                  />
+                  <span
+                    className={`relative inline-flex h-1.5 w-1.5 rounded-full ${
+                      lot.color === "green"
+                        ? "bg-emerald-500"
+                        : lot.color === "yellow"
+                          ? "bg-amber-500"
+                          : "bg-rose-500"
+                    }`}
+                  />
                 </span>
                 Live
               </span>
-              <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-[var(--surface-raised)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Open details
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </div>
