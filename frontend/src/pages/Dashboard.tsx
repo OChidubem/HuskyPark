@@ -1,10 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CarFront, MapPinned, RefreshCw, Route, Sparkles } from "lucide-react";
 import { useDashboard } from "../hooks/useDashboard";
 import AppleParkingMap from "../components/AppleParkingMap";
 import LotCard from "../components/LotCard";
 import type { DashboardLot } from "../types";
+
+function LotCardSkeleton() {
+  return (
+    <div className="skeleton-card border-l-8 border-slate-200">
+      <div className="absolute inset-y-0 left-0 w-5 skeleton-line" />
+      <div className="px-7 pt-7 pb-8">
+        <div className="skeleton-line h-3 w-14 mb-3" />
+        <div className="skeleton-line h-6 w-40 mb-2" />
+        <div className="skeleton-line h-4 w-24 mb-6" />
+        <div className="skeleton-line h-3 w-20" />
+      </div>
+      <div className="mx-7 mb-5 h-1.5 rounded-full skeleton-line" />
+    </div>
+  );
+}
+
+function useUpdatedAgo(dataUpdatedAt: number) {
+  const [label, setLabel] = useState("");
+  useEffect(() => {
+    if (!dataUpdatedAt) return;
+    const tick = () => {
+      const secs = Math.floor((Date.now() - dataUpdatedAt) / 1000);
+      if (secs < 15) setLabel("just now");
+      else if (secs < 60) setLabel(`${secs}s ago`);
+      else setLabel(`${Math.floor(secs / 60)}m ago`);
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => clearInterval(id);
+  }, [dataUpdatedAt]);
+  return label;
+}
 
 const PERMIT_FILTERS = [
   { value: "", label: "All Lots" },
@@ -20,9 +52,10 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"high" | "low">("high");
 
-  const { data: lots = [], isLoading, isError, refetch, isFetching } = useDashboard(
+  const { data: lots = [], isLoading, isError, refetch, isFetching, dataUpdatedAt } = useDashboard(
     permitType || undefined
   );
+  const updatedAgo = useUpdatedAgo(dataUpdatedAt);
 
   const filtered = lots
     .filter((l) => l.lot_name.toLowerCase().includes(search.toLowerCase()))
@@ -144,15 +177,26 @@ export default function Dashboard() {
               Compare the lots that matter to your permit.
             </h2>
           </div>
-          <button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="button-secondary self-start lg:self-auto"
-            aria-label="Refresh dashboard"
-          >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            {isFetching ? "Refreshing" : "Refresh"}
-          </button>
+          <div className="flex items-center gap-3">
+            {updatedAgo && !isFetching && (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                Updated {updatedAgo}
+              </span>
+            )}
+            <button
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="button-secondary self-start lg:self-auto"
+              aria-label="Refresh dashboard"
+            >
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              {isFetching ? "Refreshing" : "Refresh"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 grid gap-3 lg:grid-cols-[1.25fr_0.85fr_0.85fr]">
@@ -190,7 +234,15 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {isLoading && <p className="empty-state">Loading lots…</p>}
+      {isLoading && (
+        <section className="presentation-shell overflow-hidden">
+          <div className="grid gap-4 px-6 py-6 sm:grid-cols-2 lg:px-8 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <LotCardSkeleton key={i} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {isError && (
         <div className="surface-card border-rose-200/80 bg-rose-50/80 text-sm text-rose-700">

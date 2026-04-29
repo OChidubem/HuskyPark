@@ -18,7 +18,8 @@
   }
 
   html {
-    font-family: "Avenir Next", "Segoe UI", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+      "Helvetica Neue", Arial, sans-serif;
     background:
       radial-gradient(circle at top left, rgba(215, 175, 44, 0.18), transparent 30%),
       radial-gradient(circle at top right, rgba(29, 78, 216, 0.08), transparent 34%),
@@ -31,6 +32,29 @@
     min-height: 100vh;
     color: var(--text-primary);
     background: transparent;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page-bg: #1c1c1e;
+      --page-bg-alt: #2c2c2e;
+      --surface: rgba(44, 44, 46, 0.88);
+      --surface-strong: rgba(58, 58, 60, 0.95);
+      --surface-raised: rgba(72, 72, 74, 0.9);
+      --stroke: rgba(255, 255, 255, 0.1);
+      --text-primary: #f2f2f7;
+      --accent-strong: #e4c44a;
+      --accent-deep: #d0d8eb;
+      --glow: 0 28px 70px -42px rgba(0, 0, 0, 0.6);
+    }
+
+    html {
+      background:
+        radial-gradient(circle at top left, rgba(215, 175, 44, 0.08), transparent 30%),
+        radial-gradient(circle at top right, rgba(29, 78, 216, 0.06), transparent 34%),
+        linear-gradient(180deg, #1c1c1e 0%, #111113 100%);
+    }
   }
 
   ::selection {
@@ -167,4 +191,21 @@
       radial-gradient(circle at top right, rgba(215, 175, 44, 0.12), transparent 22%);
     box-shadow: 0 30px 80px -46px rgba(15, 47, 99, 0.34);
   }
+
+  .skeleton-card {
+    @apply relative overflow-hidden rounded-[28px] border border-[#dbe5f0] bg-white;
+    box-shadow: 0 20px 55px -38px rgba(15, 47, 99, 0.18);
+  }
+
+  .skeleton-line {
+    @apply rounded-full;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

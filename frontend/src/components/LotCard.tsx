@@ -62,7 +62,13 @@ export default function LotCard({ lot, onDetailClick }: Props) {
               <p className={`text-5xl font-semibold tracking-tight ${SCORE_COLOR[lot.color]}`}>
                 {Math.round(lot.prob_score * 100)}%
               </p>
-              <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">Live score</p>
+              <span className="mt-2 flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] text-slate-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Live
+              </span>
               <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Open details
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -80,9 +86,24 @@ export default function LotCard({ lot, onDetailClick }: Props) {
               </div>
             </div>
           )}
+        <div className="px-7 pb-5 pt-4">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${
+                lot.color === "green"
+                  ? "bg-emerald-500"
+                  : lot.color === "yellow"
+                    ? "bg-amber-500"
+                    : "bg-rose-500"
+              }`}
+              style={{ width: `${Math.round(lot.prob_score * 100)}%` }}
+              aria-hidden="true"
+            />
+          </div>
+        </div>
         </button>
 
-        <div className="mt-6 border-t border-slate-200/70 px-7 pb-6 pt-4">
+        <div className="border-t border-slate-200/70 px-7 pb-6 pt-4">
           <button className="button-secondary px-3 py-2 text-xs" onClick={() => setShowReport(true)} aria-label={`Report spot status for ${lot.lot_name}`}>
             Report spot
           </button>
