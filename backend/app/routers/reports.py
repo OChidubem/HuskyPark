@@ -47,13 +47,16 @@ async def submit_report(
     # Step 1: Write to PostgreSQL
     row = await conn.fetchrow(
         """
-        INSERT INTO lot_status_report (lot_id, user_id, status_type_id, confidence_score, note)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING report_id, lot_id, user_id, status_type_id, report_time, note
+        INSERT INTO lot_status_report (
+            lot_id, user_id, status_type_id, approx_available, confidence_score, note
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING report_id, lot_id, user_id, status_type_id, report_time, note, approx_available
         """,
         body.lot_id,
         int(user["user_id"]),
         status_row["status_type_id"],
+        body.approx_available,
         body.approx_available / 100.0 if body.approx_available is not None else None,
         body.note,
     )
@@ -143,8 +146,8 @@ async def list_reports(
                rst.status_name AS status,
                lsr.note,
                lsr.report_time AS reported_at,
-               'user' AS source_type,
-               NULL AS approx_available
+               lsr.source_type AS source_type,
+               lsr.approx_available
         FROM lot_status_report lsr
         JOIN parking_lot pl ON pl.lot_id = lsr.lot_id
         JOIN report_status_type rst ON rst.status_type_id = lsr.status_type_id

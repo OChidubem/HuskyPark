@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Sparkles, Send } from "lucide-react";
+import { AlertCircle, BarChart3, Sparkles, Send } from "lucide-react";
 import api from "../lib/api";
 import type { RecommendResponse } from "../types";
 import ProbabilityBadge from "../components/ProbabilityBadge";
+import { useDashboard } from "../hooks/useDashboard";
 
 function scoreToColor(score: number) {
   if (score >= 0.65) return "green" as const;
@@ -14,12 +15,24 @@ function scoreToColor(score: number) {
 export default function AIRecommend() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<RecommendResponse | null>(null);
+  const { data: fallbackLots = [] } = useDashboard();
 
   const mutation = useMutation({
     mutationFn: (q: string) =>
       api.post<RecommendResponse>("/recommend", { query: q }).then((r) => r.data),
     onSuccess: (data) => setResult(data),
   });
+
+  const fallbackRecommendations = fallbackLots.slice(0, 3).map((lot, index) => ({
+    rank: index + 1,
+    lot_id: lot.lot_id,
+    lot_name: lot.lot_name,
+    prob_score: lot.prob_score,
+    rationale: `${Math.round(lot.prob_score * 100)}% live availability with ${lot.confidence_level} confidence.`,
+  }));
+
+  const visibleRecommendations =
+    result?.recommendations.length ? result.recommendations : fallbackRecommendations;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,88 +42,109 @@ export default function AIRecommend() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-yellow-500" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Recommendation</h1>
-            <p className="text-sm text-gray-500">Ask where to park in natural language</p>
+    <main className="page-shell">
+      <div className="mx-auto max-w-4xl">
+        <div className="hero-panel">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-6 w-6 text-[var(--accent-strong)]" />
+            <p className="eyebrow">AI Recommend</p>
           </div>
+          <div>
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
+              Ask for parking advice in plain language.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              Describe where you are headed and when you plan to arrive. HuskyPark will rank the
+              strongest lot options and explain the reasoning.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-8">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Where can I park near Atwood at 9 AM?"
+                className="input-field flex-1"
+                aria-label="Parking query"
+                minLength={5}
+                required
+              />
+              <button
+                type="submit"
+                disabled={mutation.isPending || query.length < 5}
+                className="button-primary justify-center sm:min-w-[148px]"
+              >
+                <Send className="h-4 w-4" />
+                {mutation.isPending ? "Asking…" : "Ask"}
+              </button>
+            </div>
+          </form>
         </div>
 
-        <form onSubmit={handleSubmit} className="mb-6">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Where can I park near Atwood at 9 AM?"
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-sm
-                focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              aria-label="Parking query"
-              minLength={5}
-              required
-            />
-            <button
-              type="submit"
-              disabled={mutation.isPending || query.length < 5}
-              className="flex items-center gap-2 rounded-xl bg-[#1a2744] px-5 py-3 text-sm
-                font-semibold text-white hover:bg-[#243561] disabled:opacity-60 transition
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <Send className="h-4 w-4" />
-              {mutation.isPending ? "Asking…" : "Ask"}
-            </button>
-          </div>
-        </form>
-
         {mutation.isError && (
-          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">
-            Recommendation failed. Please try again.
-          </p>
+          <div className="surface-card mb-4 border-amber-200/80 bg-amber-50/85 text-sm text-amber-700">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div>
+                <p className="font-medium">AI reasoning is unavailable right now.</p>
+                <p className="mt-1">
+                  Live lot availability is still shown below so you can keep moving.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
-        {result && (
+        {(result || fallbackRecommendations.length > 0) && (
           <div className="space-y-4">
-            {/* Ranked lots */}
-            <section>
-              <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Recommended Lots
-              </h2>
+            <section className="surface-card">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  {result ? "Recommended Lots" : "Live Availability"}
+                </h2>
+                {!result && (
+                  <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    Fallback ranking
+                  </div>
+                )}
+              </div>
               <ol className="space-y-3">
-                {result.recommendations.map((rec) => (
+                {visibleRecommendations.map((rec) => (
                   <li
                     key={rec.lot_id}
-                    className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    className="flex items-start gap-4 rounded-[24px] border border-slate-200/70 bg-[var(--surface-raised)] p-4"
                   >
-                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center
-                      rounded-full bg-[#1a2744] text-xs font-bold text-white">
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-950 text-xs font-bold text-white">
                       {rec.rank}
                     </span>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-gray-900">{rec.lot_name}</span>
+                        <span className="font-semibold text-slate-950">{rec.lot_name}</span>
                         <ProbabilityBadge
                           score={rec.prob_score}
                           color={scoreToColor(rec.prob_score)}
                           size="sm"
                         />
                       </div>
-                      <p className="mt-1 text-sm text-gray-500">{rec.rationale}</p>
+                      <p className="mt-1 text-sm text-slate-500">{rec.rationale}</p>
                     </div>
                   </li>
                 ))}
               </ol>
             </section>
 
-            {/* AI response text */}
-            <section className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-              <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+            <section className="surface-card">
+              <h2 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                 <Sparkles className="h-3.5 w-3.5" />
-                AI Response
+                {result ? "AI Response" : "Status"}
               </h2>
-              <p className="text-sm text-blue-900 whitespace-pre-line">{result.ai_response_text}</p>
+              <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
+                {result?.ai_response_text ??
+                  "Showing the best current lots by live availability because the recommendation service did not return an AI explanation."}
+              </p>
             </section>
           </div>
         )}

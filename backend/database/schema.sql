@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS lot_status_report (
     user_id          BIGINT          REFERENCES app_user(user_id)            ON DELETE SET NULL,
     status_type_id   BIGINT NOT NULL REFERENCES report_status_type(status_type_id) ON DELETE RESTRICT,
     report_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    approx_available INTEGER          CHECK (approx_available >= 0),
     confidence_score NUMERIC(3,2)     CHECK (confidence_score BETWEEN 0 AND 1),
     note             VARCHAR(300),
     source_type      VARCHAR(20) NOT NULL DEFAULT 'user'
@@ -196,7 +197,7 @@ SELECT
     pl.capacity,
     COUNT(lsr.report_id)                                                    AS report_count,
     MAX(lsr.report_time)                                                    AS last_report_time,
-    SUM(CASE WHEN rst.status_name = 'full'         THEN 1 ELSE 0 END)      AS full_reports,
+    SUM(CASE WHEN rst.status_name = 'lot_full'     THEN 1 ELSE 0 END)      AS full_reports,
     SUM(CASE WHEN rst.status_name = 'hard_to_find' THEN 1 ELSE 0 END)      AS hard_to_find_reports,
     SUM(CASE WHEN rst.status_name = 'found_spot'   THEN 1 ELSE 0 END)      AS found_spot_reports
 FROM parking_lot pl

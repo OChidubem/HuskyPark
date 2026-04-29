@@ -15,7 +15,7 @@ ON CONFLICT (code) DO NOTHING;
 INSERT INTO report_status_type (status_name, description) VALUES
 ('found_spot',   'Reporter found parking without difficulty'),
 ('hard_to_find', 'Parking was available but difficult to find'),
-('full',         'Lot appeared full or nearly full')
+('lot_full',     'Lot appeared full or nearly full')
 ON CONFLICT (status_name) DO NOTHING;
 
 -- ── Parking Lots ──────────────────────────────────────────────
@@ -63,15 +63,20 @@ INSERT INTO weather_snapshot (recorded_at, temperature_f, condition, precipitati
 ON CONFLICT DO NOTHING;
 
 -- ── Simulated Spot Reports ────────────────────────────────────
-INSERT INTO lot_status_report (lot_id, status_type_id, report_time, confidence_score, source_type)
+INSERT INTO lot_status_report (lot_id, status_type_id, report_time, approx_available, confidence_score, source_type)
 SELECT
     pl.lot_id,
     rst.status_type_id,
     NOW() - (INTERVAL '1 hour' * gs.n),
+    CASE d.status_name
+        WHEN 'found_spot' THEN 8
+        WHEN 'hard_to_find' THEN 3
+        ELSE 0
+    END,
     0.75,
     'simulated'
 FROM (VALUES
-    ('C', 'found_spot'),   ('C', 'hard_to_find'), ('M', 'full'),
+    ('C', 'found_spot'),   ('C', 'hard_to_find'), ('M', 'lot_full'),
     ('A', 'found_spot'),   ('K', 'found_spot'),   ('N', 'found_spot')
 ) AS d(lot_code, status_name)
 CROSS JOIN (SELECT generate_series(1, 3) AS n) gs

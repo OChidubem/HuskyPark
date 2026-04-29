@@ -9,9 +9,29 @@ import asyncpg
 
 from app.auth.deps import require_auth
 from app.database.postgres import get_db
-from app.models.schemas import PermitCreate, PermitOut, PermitUpdate
+from app.models.schemas import (
+    PermitCategoryOut,
+    PermitCreate,
+    PermitOut,
+    PermitUpdate,
+)
 
 router = APIRouter(prefix="/permits", tags=["permits"])
+
+
+@router.get("/categories", response_model=list[PermitCategoryOut])
+async def list_permit_categories(
+    _user: dict = Depends(require_auth),
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    rows = await conn.fetch(
+        """
+        SELECT permit_category_id, code, name, description
+        FROM permit_category
+        ORDER BY name
+        """
+    )
+    return [dict(r) for r in rows]
 
 
 @router.get("", response_model=list[PermitOut])
@@ -110,12 +130,18 @@ async def update_permit(
     await conn.execute(
         """
         UPDATE user_permit
-        SET valid_to = $1
+        SET valid_to = $1,
+            status = CASE
+                WHEN $1 < CURRENT_DATE THEN 'expired'
+                ELSE status
+            END
         WHERE user_permit_id = $2
         """,
         new_to,
         permit_id,
     )
+
+    status_value = "expired" if new_to < date.today() else existing["status"]
 
     return PermitOut(
         user_permit_id=existing["user_permit_id"],
@@ -124,5 +150,5 @@ async def update_permit(
         permit_number=existing["permit_number"],
         valid_from=existing["valid_from"],
         valid_to=new_to,
-        status=existing["status"],
+        status=status_value,
     )

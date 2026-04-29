@@ -26,7 +26,7 @@ async def list_events(
 @router.post("", response_model=EventOut, status_code=status.HTTP_201_CREATED)
 async def create_event(
     body: EventCreate,
-    admin: dict = Depends(require_admin),
+    _admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_db),
 ):
     if body.event_end <= body.event_start:
@@ -68,12 +68,31 @@ async def create_event(
 async def update_event(
     event_id: int,
     body: EventUpdate,
-    admin: dict = Depends(require_admin),
+    _admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_db),
 ):
     updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Nothing to update")
+
+    current = await conn.fetchrow(
+        """
+        SELECT event_id, title, location, event_start, event_end, expected_attendance
+        FROM campus_event
+        WHERE event_id = $1
+        """,
+        event_id,
+    )
+    if not current:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+
+    new_start = updates.get("event_start", current["event_start"])
+    new_end = updates.get("event_end", current["event_end"])
+    if new_end <= new_start:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "event_end must be after event_start",
+        )
 
     set_clause = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(updates))
     row = await conn.fetchrow(
@@ -82,15 +101,13 @@ async def update_event(
         event_id,
         *updates.values(),
     )
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
     return dict(row)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_event(
     event_id: int,
-    admin: dict = Depends(require_admin),
+    _admin: dict = Depends(require_admin),
     conn: asyncpg.Connection = Depends(get_db),
 ):
     result = await conn.execute(

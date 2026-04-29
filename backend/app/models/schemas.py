@@ -3,17 +3,21 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class AppBaseModel(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-class LoginRequest(BaseModel):
+class LoginRequest(AppBaseModel):
     email: EmailStr
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(AppBaseModel):
     message: str = "Login successful"
     user_id: int
     role: str
@@ -21,14 +25,14 @@ class TokenResponse(BaseModel):
 
 # ── Users ─────────────────────────────────────────────────────────────────────
 
-class UserCreate(BaseModel):
+class UserCreate(AppBaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=8)
     role: Literal["student", "resident", "employee", "visitor", "admin"] = "student"
 
 
-class UserOut(BaseModel):
+class UserOut(AppBaseModel):
     user_id: int
     full_name: str
     email: str
@@ -36,7 +40,7 @@ class UserOut(BaseModel):
     created_at: datetime
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(AppBaseModel):
     full_name: str | None = None
     role: Literal["student", "resident", "employee", "visitor", "admin"] | None = None
     is_active: bool | None = None
@@ -44,7 +48,7 @@ class UserUpdate(BaseModel):
 
 # ── Parking Lots ──────────────────────────────────────────────────────────────
 
-class LotOut(BaseModel):
+class LotOut(AppBaseModel):
     lot_id: int
     lot_code: str
     lot_name: str
@@ -54,7 +58,7 @@ class LotOut(BaseModel):
     is_active: bool
 
 
-class PredictionOut(BaseModel):
+class PredictionOut(AppBaseModel):
     pred_id: int
     lot_id: int
     lot_name: str
@@ -66,11 +70,13 @@ class PredictionOut(BaseModel):
     model_version: str | None = None
 
 
-class DashboardLotItem(BaseModel):
+class DashboardLotItem(AppBaseModel):
     lot_id: int
     lot_code: str
     lot_name: str
     lot_type: str
+    latitude: float | None = None
+    longitude: float | None = None
     prob_score: float
     confidence_level: str
     color: Literal["green", "yellow", "red"]
@@ -80,14 +86,14 @@ class DashboardLotItem(BaseModel):
 
 # ── Reports ───────────────────────────────────────────────────────────────────
 
-class ReportCreate(BaseModel):
+class ReportCreate(AppBaseModel):
     lot_id: int
     status: Literal["found_spot", "lot_full", "hard_to_find"]
     approx_available: int | None = Field(default=None, ge=0)
     note: str | None = Field(default=None, max_length=300)
 
 
-class ReportOut(BaseModel):
+class ReportOut(AppBaseModel):
     report_id: int
     lot_id: int
     lot_name: str
@@ -99,19 +105,17 @@ class ReportOut(BaseModel):
 
 # ── Permits ───────────────────────────────────────────────────────────────────
 
-class PermitCreate(BaseModel):
+class PermitCreate(AppBaseModel):
     permit_category_id: int
-    vehicle_plate: str = Field(min_length=2, max_length=15)
     valid_from: date
     valid_to: date
 
 
-class PermitUpdate(BaseModel):
-    vehicle_plate: str | None = Field(default=None, min_length=2, max_length=15)
+class PermitUpdate(AppBaseModel):
     valid_to: date | None = None
 
 
-class PermitOut(BaseModel):
+class PermitOut(AppBaseModel):
     user_permit_id: int
     permit_code: str
     permit_name: str
@@ -121,9 +125,31 @@ class PermitOut(BaseModel):
     status: str
 
 
+class PermitCategoryOut(AppBaseModel):
+    permit_category_id: int
+    code: str
+    name: str
+    description: str | None = None
+
+
+class LotCreate(AppBaseModel):
+    lot_code: str = Field(min_length=1, max_length=20)
+    lot_name: str = Field(min_length=2, max_length=100)
+    lot_type: Literal["resident", "commuter", "employee", "visitor", "mixed", "ramp"]
+    zone: str | None = Field(default=None, max_length=50)
+    capacity: int = Field(gt=0)
+
+
+class LotUpdate(AppBaseModel):
+    lot_name: str | None = Field(default=None, min_length=2, max_length=100)
+    zone: str | None = Field(default=None, max_length=50)
+    capacity: int | None = Field(default=None, gt=0)
+    is_active: bool | None = None
+
+
 # ── Campus Events ─────────────────────────────────────────────────────────────
 
-class EventCreate(BaseModel):
+class EventCreate(AppBaseModel):
     title: str = Field(min_length=3, max_length=160)
     location: str = Field(min_length=2, max_length=120)
     event_start: datetime
@@ -135,7 +161,7 @@ class EventCreate(BaseModel):
     )
 
 
-class EventUpdate(BaseModel):
+class EventUpdate(AppBaseModel):
     title: str | None = None
     location: str | None = None
     event_start: datetime | None = None
@@ -143,7 +169,7 @@ class EventUpdate(BaseModel):
     expected_attendance: int | None = None
 
 
-class EventOut(BaseModel):
+class EventOut(AppBaseModel):
     event_id: int
     title: str
     location: str
@@ -154,13 +180,13 @@ class EventOut(BaseModel):
 
 # ── AI Recommendation ─────────────────────────────────────────────────────────
 
-class RecommendRequest(BaseModel):
+class RecommendRequest(AppBaseModel):
     query: str = Field(min_length=5, max_length=500)
     target_time: datetime | None = None
     permit_type: str | None = None
 
 
-class LotRecommendation(BaseModel):
+class LotRecommendation(AppBaseModel):
     rank: int
     lot_id: int
     lot_name: str
@@ -168,7 +194,7 @@ class LotRecommendation(BaseModel):
     rationale: str
 
 
-class RecommendResponse(BaseModel):
+class RecommendResponse(AppBaseModel):
     recommendations: list[LotRecommendation]
     ai_response_text: str
     context: dict
@@ -176,7 +202,7 @@ class RecommendResponse(BaseModel):
 
 # ── Pagination ────────────────────────────────────────────────────────────────
 
-class PaginatedResponse(BaseModel):
+class PaginatedResponse(AppBaseModel):
     items: list
     total_count: int
     page: int

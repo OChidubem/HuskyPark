@@ -1,144 +1,157 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
+import type { User } from "../types";
+
+const ROLE_OPTIONS: User["role"][] = ["student", "resident", "employee", "visitor"];
 
 export default function Register() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
-
+  const { register, signIn } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [role, setRole] = useState<User["role"]>("student");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      await signUp(fullName, email, password);
+      await register({ full_name: fullName, email, password, role });
+      await signIn(email, password);
       navigate("/dashboard");
     } catch {
-      setError("Registration failed. Please try again.");
+      setError("We could not create your account. Please review your details and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#1a2744]">
-            Husky<span className="text-yellow-500">Park</span>
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            AI-Driven Parking Predictor · SCSU
-          </p>
+    <main className="auth-shell">
+      <section className="auth-hero">
+        <p className="eyebrow">Create Account</p>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+          Start your day with a calmer parking plan.
+        </h1>
+        <p className="mt-4 max-w-lg text-sm leading-6 text-slate-600 sm:text-base">
+          HuskyPark brings prediction, permits, and live campus context into one polished
+          dashboard for students, residents, employees, and visitors.
+        </p>
+        <div className="mt-8 flex max-w-lg items-start gap-4 rounded-[28px] border border-white/70 bg-white/65 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+          <div className="rounded-2xl bg-white/80 p-3">
+            <ShieldCheck className="h-5 w-5 text-[var(--accent-strong)]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Designed for clarity</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Minimal friction, readable states, and reliable access to your permits and lot
+              recommendations.
+            </p>
+          </div>
         </div>
+      </section>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h2 className="mb-6 text-lg font-semibold text-gray-900">
-            Create an account
+      <section className="auth-card">
+        <div className="mb-8">
+          <p className="eyebrow">HuskyPark</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+            Create your account
           </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="fullName" className="mb-1 block text-sm font-medium text-gray-700">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                autoComplete="name"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Jane Doe"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="you@stcloudstate.edu"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirm" className="mb-1 block text-sm font-medium text-gray-700">
-                Confirm Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="confirm"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !fullName || !email || !password || !confirm}
-              className="w-full rounded-xl bg-[#1a2744] py-2.5 text-sm font-semibold text-white transition hover:bg-[#243561] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60"
-            >
-              {loading ? "Creating account…" : "Register"}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Already have an account?{" "}
-            <Link to="/login" className="text-blue-600 hover:underline">
-              Sign in
-            </Link>
+          <p className="mt-2 text-sm text-slate-500">
+            Use your campus email to unlock recommendations and permit management.
           </p>
         </div>
-      </div>
-    </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div>
+            <label htmlFor="fullName" className="input-label">
+              Full name
+            </label>
+            <input
+              id="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="input-field"
+              placeholder="Jordan Avery"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="registerEmail" className="input-label">
+              Campus email
+            </label>
+            <input
+              id="registerEmail"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field"
+              placeholder="you@stcloudstate.edu"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="registerPassword" className="input-label">
+              Password
+            </label>
+            <input
+              id="registerPassword"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="At least 8 characters"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="role" className="input-label">
+              Role
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as User["role"])}
+              className="input-field"
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {error && <p className="text-sm text-rose-600">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading || !fullName || !email || !password}
+            className="button-primary w-full justify-center"
+          >
+            {loading ? "Creating account…" : "Create account"}
+            {!loading && <ArrowRight className="h-4 w-4" />}
+          </button>
+        </form>
+
+        <p className="mt-6 text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-[var(--accent-strong)] hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </section>
+    </main>
   );
 }

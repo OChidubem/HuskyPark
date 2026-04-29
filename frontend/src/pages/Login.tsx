@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
@@ -26,76 +27,97 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#1a2744]">
-            Husky<span className="text-yellow-500">Park</span>
+    <main className="auth-shell">
+      <section className="auth-hero">
+        <p className="eyebrow">Campus Intelligence</p>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+          Find the best lot before the search becomes the commute.
+        </h1>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+          HuskyPark gives St. Cloud State drivers a more composed parking experience with live lot
+          scoring, permit context, and campus event awareness in one refined interface.
+        </p>
+        <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
+          {[
+            ["24+", "Tracked lots"],
+            ["60s", "Live refresh cycle"],
+            ["AI", "Recommendation support"],
+          ].map(([value, label]) => (
+            <div key={label} className="surface-card">
+              <p className="text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+              <p className="mt-2 text-sm text-slate-500">{label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="auth-card">
+        <div className="mb-8">
+          <p className="eyebrow">Welcome Back</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+            Sign in to HuskyPark
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            AI-Driven Parking Predictor · SCSU
+          <p className="mt-2 text-sm text-slate-500">
+            Continue to your live dashboard and parking recommendations.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h2 className="mb-6 text-lg font-semibold text-gray-900">Sign in</h2>
+        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <div>
+            <label htmlFor="email" className="input-label">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field"
+              placeholder="you@stcloudstate.edu"
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="you@stcloudstate.edu"
-              />
-            </div>
+          <div>
+            <label htmlFor="password" className="input-label">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="••••••••"
+            />
+          </div>
 
-            <div>
-              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="••••••••"
-              />
-            </div>
+          {error && (
+            <p className="text-sm text-rose-600" role="alert">
+              {error}
+            </p>
+          )}
 
-            {error && (
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
-            )}
+          <button
+            type="submit"
+            disabled={loading || !email || !password}
+            className="button-primary w-full justify-center"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+            {!loading && <ArrowRight className="h-4 w-4" />}
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              disabled={loading || !email || !password}
-              className="w-full rounded-xl bg-[#1a2744] py-2.5 text-sm font-semibold text-white transition hover:bg-[#243561] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-60"
-            >
-              {loading ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-xs text-gray-500">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Register
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+        <p className="mt-6 text-sm text-slate-500">
+          Don&apos;t have an account?{" "}
+          <Link to="/register" className="font-medium text-[var(--accent-strong)] hover:underline">
+            Register
+          </Link>
+        </p>
+      </section>
+    </main>
   );
 }
