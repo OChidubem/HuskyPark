@@ -1,119 +1,148 @@
 # HuskyPark Predictor
 
-**AI-Driven Parking Spot Probability Dashboard for SCSU**
+AI-driven parking availability dashboard for St. Cloud State University.
 
-> CSCI 414/514 · Platform-Based Development · Group 8
-> Chidubem Okoye · Yvonne Onmakpo · Tonika Devi Avanigadda
-> St. Cloud State University · 2026
+HuskyPark combines live lot predictions, crowd reports, permits, campus events, and map-based lot browsing into one full-stack app. The current UI includes a redesigned dashboard, AI recommendation fallback behavior, analytics, registration/login, and a real OpenStreetMap campus view for lot surroundings.
 
-[![CI](https://github.com/OChidubem/HuskyPark/actions/workflows/ci.yml/badge.svg)](https://github.com/OChidubem/HuskyPark/actions/workflows/ci.yml)
-[![Deploy](https://github.com/OChidubem/HuskyPark/actions/workflows/deploy.yml/badge.svg)](https://github.com/OChidubem/HuskyPark/actions/workflows/deploy.yml)
-
-> **Live app:** https://huskypark.azurecontainerapps.io *(deploy to Azure to activate)*
-> **Demo video:** [Watch on YouTube](https://youtu.be/PLACEHOLDER) *(update link after recording)*
-> **Phase reports:** [`docs/`](docs/)
-
----
-
-## Overview
-
-HuskyPark Predictor is a web-based dashboard that estimates the probability of finding an available parking spot across SCSU's 24+ surface lots and the 4th Avenue Parking Ramp. It combines historical patterns, crowdsourced reports, weather data, and campus events to surface real-time probability scores for students, faculty, staff, and visitors.
-
----
-
-## Architecture
+## Stack
 
 | Layer | Technology |
-|---|---|
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
-| Backend API | FastAPI (Python 3.12) · async/await throughout |
-| Relational DB | PostgreSQL 16 (asyncpg) |
-| Document DB | MongoDB 7 (Motor async driver) |
-| Cache | Redis 7 (60-second TTL on dashboard predictions) |
-| Workers | APScheduler (15-min prediction recompute) |
-| Auth | JWT via HttpOnly cookies |
-| Containers | Docker + Docker Compose |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| Backend | FastAPI, asyncpg, Motor |
+| Relational DB | PostgreSQL 16 |
+| Document DB | MongoDB 7 |
+| Cache | Redis 7 |
+| Background work | APScheduler |
+| Containers | Docker, Docker Compose |
+| Map view | OpenStreetMap via Leaflet |
 
----
+## Current Features
 
-## Repository Structure
+- Auth with register, login, logout, and HttpOnly auth cookies
+- Dashboard with ranked lot cards, live filters, and lot confidence levels
+- Real campus map section with clickable lot markers around the selected lot
+- AI recommendation page with graceful fallback to live availability when AI is unavailable
+- Permit management
+- Analytics overview page
+- Admin events screen
+- Backend prediction recompute job on startup and every 15 minutes
 
-```
+## Project Structure
+
+```text
 HuskyPark/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py          # FastAPI application entry point
-│   │   ├── config.py        # Settings (pydantic-settings)
-│   │   ├── database/        # PostgreSQL + MongoDB connection pools
-│   │   ├── auth/            # JWT creation, validation, dependencies
-│   │   ├── models/          # Pydantic request/response schemas
-│   │   ├── routers/         # One file per API resource
-│   │   └── services/        # Prediction engine, Redis cache
+│   │   ├── main.py
+│   │   ├── auth/
+│   │   ├── database/
+│   │   ├── models/
+│   │   ├── routers/
+│   │   └── services/
 │   ├── database/
-│   │   ├── schema.sql       # Full PostgreSQL DDL (Phase 2)
-│   │   ├── seed.sql         # SCSU lot seed data
-│   │   └── mongo_indexes.js # MongoDB index setup
+│   │   ├── schema.sql
+│   │   ├── seed.sql
+│   │   └── migrations_2026_04_28_frontend_alignment.sql
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── types/           # Shared TypeScript interfaces
-│   │   ├── lib/             # API client, auth helpers
-│   │   ├── hooks/           # React Query hooks
-│   │   ├── components/      # Reusable UI components
-│   │   └── pages/           # Route-level page components
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   └── types/
 │   ├── package.json
 │   └── Dockerfile
 ├── docker-compose.yml
 └── .env.example
 ```
 
----
+## Environment
 
-## Branching Strategy (Git Flow)
-
-```
-main        ← protected; merge via PR only
-develop     ← integration branch
-feature/*   ← new features (branch from develop, PR back to develop)
-bugfix/*    ← bug fixes
-release/*   ← release candidates
-hotfix/*    ← emergency patches direct from main
-```
-
-All PRs require at least one reviewer before merge. Branch protection rules are enabled on `main` and `develop`.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Docker Desktop 4.x
-- Node 20 (for local frontend dev)
-- Python 3.12 (for local backend dev)
-
-### Run with Docker
+Copy the example file first:
 
 ```bash
-cp .env.example .env        # fill in secrets
+cp .env.example .env
+```
+
+Important variables:
+
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `MONGO_URL`
+- `MONGO_DB`
+- `REDIS_URL`
+- `SECRET_KEY`
+- `FRONTEND_ORIGIN`
+- `OPENAI_API_KEY`
+- `OPENWEATHER_API_KEY`
+
+Notes:
+
+- `OPENAI_API_KEY` is optional. If it is missing or the AI request fails, the recommend page falls back to ranking lots by live availability.
+- The map view does not require an Apple Maps token. It uses OpenStreetMap tiles.
+
+## Run With Docker
+
+This is the recommended path.
+
+```bash
+cp .env.example .env
 docker compose up --build
 ```
 
-- Frontend: http://localhost:5173
-- API docs: http://localhost:8000/docs
-- API redoc: http://localhost:8000/redoc
+Open:
 
-### Local Backend Development
+- Frontend: `http://localhost:5173`
+- API docs: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## Rebuild Services
+
+Rebuild only the frontend:
+
+```bash
+docker compose build frontend
+docker compose up -d frontend
+```
+
+Rebuild only the backend:
+
+```bash
+docker compose build backend
+docker compose up -d backend
+```
+
+Rebuild both app services:
+
+```bash
+docker compose build frontend backend
+docker compose up -d frontend backend
+```
+
+Restart everything from scratch:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+## Local Development
+
+### Backend
 
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Local Frontend Development
+### Frontend
 
 ```bash
 cd frontend
@@ -121,87 +150,121 @@ npm install
 npm run dev
 ```
 
----
-
-## Azure Deployment
-
-The `infra/` folder contains Bicep templates that provision the full stack on Azure:
-
-| Resource | Azure Service |
-|---|---|
-| Backend API | Azure Container Apps |
-| Frontend | Azure Static Web Apps |
-| PostgreSQL | Azure Database for PostgreSQL Flexible Server |
-| MongoDB | Azure Cosmos DB (MongoDB API) |
-| Redis | Azure Cache for Redis |
-| Secrets | Azure Key Vault |
-| Observability | Azure Application Insights |
-
-### Deploy
-
-```bash
-# 1 — Login
-az login
-az account set --subscription <YOUR_SUBSCRIPTION_ID>
-
-# 2 — Create resource group
-az group create --name huskypark-rg --location eastus
-
-# 3 — Deploy IaC
-az deployment group create \
-  --resource-group huskypark-rg \
-  --template-file infra/main.bicep \
-  --parameters @infra/parameters.json
-```
-
-The GitHub Actions workflow (`.github/workflows/deploy.yml`) runs this automatically on every push to `main`.
-
----
-
 ## API Overview
 
 | Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/v1/auth/login` | Login, receive JWT cookie |
+| --- | --- | --- |
+| POST | `/api/v1/auth/register` | Create account |
+| POST | `/api/v1/auth/login` | Login and set auth cookie |
 | POST | `/api/v1/auth/logout` | Clear auth cookie |
-| GET | `/api/v1/dashboard` | Merged lot predictions + analytics |
-| GET | `/api/v1/lots` | All parking lots |
-| GET | `/api/v1/lots/{id}/predictions` | 24-hour prediction history |
-| POST | `/api/v1/reports` | Submit crowdsourced spot report |
-| GET | `/api/v1/reports` | Filter crowd report history |
-| POST | `/api/v1/permits` | Create a permit |
-| PATCH | `/api/v1/permits/{id}` | Update plate / dates |
-| POST | `/api/v1/recommend` | AI parking recommendation |
-| GET | `/api/v1/analytics` | Hourly trend analytics (MongoDB) |
-| GET | `/api/v1/events` | Campus events |
-| POST | `/api/v1/events` | Create event (admin) |
-| GET | `/api/v1/users` | User management (admin) |
-| GET | `/api/v1/export` | CSV data export (admin) |
+| GET | `/api/v1/dashboard` | Ranked live lot feed |
+| GET | `/api/v1/lots` | List active lots |
+| GET | `/api/v1/lots/{id}/predictions` | Recent predictions for one lot |
+| POST | `/api/v1/recommend` | AI or fallback lot recommendation |
+| GET | `/api/v1/analytics` | Raw analytics feed from MongoDB |
+| GET | `/api/v1/analytics/summary` | Summary analytics for one lot |
+| POST | `/api/v1/reports` | Submit a crowd report |
+| GET | `/api/v1/reports` | Report history |
+| POST | `/api/v1/permits` | Create permit |
+| PATCH | `/api/v1/permits/{id}` | Update permit |
+| GET | `/api/v1/events` | List events |
+| POST | `/api/v1/events` | Create event |
 
----
+## Prediction Notes
 
-## Color-Coded Probability Scale
+The prediction service currently blends:
 
-| Color | Score | Label |
-|---|---|---|
-| Green | ≥ 0.65 | Available |
-| Yellow | 0.35 – 0.64 | Limited |
-| Red | < 0.35 | Full |
+- recent same-hour crowd report history
+- recent lot report freshness
+- lot capacity and lot type baseline
+- hour-of-day pressure by lot type
+- latest weather snapshot
+- active campus events
 
----
+Predictions are recomputed:
 
-## Team Contributions
+- once at backend startup
+- every 15 minutes afterwards
 
-| Member | Role |
-|---|---|
-| Chidubem Okoye | Planning, documentation, backend integration |
-| Yvonne Onmakpo | Data modeling, probability logic, testing |
-| Tonika Devi Avanigadda | UI/UX design, frontend implementation |
+## Database Compatibility
 
----
+If your Postgres container was created before the newer `approx_available` column was added, the app may behave differently until the migration is applied.
 
-## License
+Migration file:
 
-MIT — see [LICENSE](LICENSE)
+- `backend/database/migrations_2026_04_28_frontend_alignment.sql`
 
-Academic project — St. Cloud State University, Spring 2026.
+Apply it inside Docker:
+
+```bash
+docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" < backend/database/migrations_2026_04_28_frontend_alignment.sql
+```
+
+The backend code is currently tolerant of older schemas, but applying the migration is still the correct long-term state.
+
+## Troubleshooting
+
+### Dashboard says `Failed to load dashboard data`
+
+Check whether the backend container is running:
+
+```bash
+docker compose ps
+```
+
+If the backend is down, inspect logs:
+
+```bash
+docker compose logs backend --tail=200
+```
+
+Then rebuild and restart it:
+
+```bash
+docker compose up -d --build backend
+```
+
+### Frontend changes are not showing
+
+Rebuild the frontend and hard refresh the browser:
+
+```bash
+docker compose build frontend
+docker compose up -d frontend
+```
+
+Then refresh with `Cmd+Shift+R` on macOS.
+
+### Lots show stale or uniform scores
+
+Restart the backend so predictions recompute:
+
+```bash
+docker compose up -d --build backend
+```
+
+If the data volume is old or inconsistent, restart the whole stack:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+## Validation
+
+Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Python syntax check:
+
+```bash
+python3 -m py_compile backend/app/main.py backend/app/services/prediction.py backend/app/routers/recommend.py
+```
+
+## Status
+
+This repo is an active course project and the README now reflects the current implementation more closely than the original project handoff version. If you change routes, Docker flow, prediction logic, or map behavior again, update this file in the same PR.
