@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Sidebar from "./components/Sidebar";
@@ -54,6 +55,17 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </AuthProvider>
+=======
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/*" element={<ProtectedLayout />} />
+        </Routes>
+      </BrowserRouter>
+>>>>>>> origin/main
     </QueryClientProvider>
   );
 }
+
+
